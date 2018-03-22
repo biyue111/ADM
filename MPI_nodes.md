@@ -18,10 +18,10 @@
 默认使用ssh登陆其他主机（或自己）是需要密码的
 
 ## Node1(Server)
-* 生成 SSH 私钥对
+* 生成 SSH 私钥对，一路回车就好
   > ssh-keygen -t rsa 
 
-一路回车就好
+
 * 生成authorized_keys并发送给其他node（这里举例node2）
   > ssh guest@node2 mkdir -p .ssh
   
@@ -37,12 +37,14 @@
 在.c所在文件的位置添加hosts文件
 输入
   > node1
+  
   > node2
   
 （这里node1或node2也可以直接是IP地址[就是如果前面不改hosts文件的话]）
   
 或指定每个节点的进程数
   > node1 slots=4
+  
   > node2 slots=2
   
 最后确认每个node中.c文件均在相同目录名下
