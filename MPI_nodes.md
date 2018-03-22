@@ -30,6 +30,7 @@
   （这里node2也可以直接是IP地址[就是如果前面不改hosts文件的话]）
 
 * 尝试连接到node2
+
   > ssh node2
 
 ## node2
