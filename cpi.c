@@ -53,6 +53,7 @@ int main(int argc,char *argv[])
 
     if (myid == 0) {
     	endwtime = MPI_Wtime();
+	printf("num of rectangles is %d\n", n);
     	printf("pi is approximately %.16f, Error is %.16f\n",
     	   pi, fabs(pi - PI25DT));
     	printf("wall clock time = %f\n", endwtime-startwtime);	       
