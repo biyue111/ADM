@@ -25,12 +25,12 @@
 * 生成authorized_keys并发送给其他node（这里举例node2）
   > ssh guest@node2 mkdir -p .ssh
   
-  > cat .ssh/id_rsa.pub | ssh guest@node2 'cat >> .ssh/authorized_keys'
+  > cat .ssh/id_rsa.pub | ssh guest@node2 'cat >> .ssh/authorized_keys'
   
   （这里node2也可以直接是IP地址[就是如果前面不改hosts文件的话]）
 
 * 尝试连接到node2
-  > ssh node2
+  > ssh node2
 
 ## node2
 * 好像什么都不用做...
