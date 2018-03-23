@@ -12,7 +12,7 @@ The pseudocode of project 2
 4. return prime_num;
 ```
 
-## Ohter Nodes
+## Other Nodes
 
 ```
 1. Find all_prime in [3,sqrt(N)]
