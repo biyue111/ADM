@@ -22,5 +22,7 @@ The pseudocode of project 2
       for p in set of all_prime{
          FindPrime(i, p, all_number); 
       }
+4. Calcul the total prime number
+5. Send the total prime number to node 0
 ```
          
