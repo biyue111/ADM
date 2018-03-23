@@ -15,9 +15,12 @@ The pseudocode of project 2
 ## Ohter Nodes
 
 ```
-1. Find all prime in [3,sqrt(N)]
+1. Find all_prime in [3,sqrt(N)]
 2. Init: Calcul lower_value and high_value, 
          Create list all_number = [lower_value, high_value] and mark all even number as composite number
-         
+3. for i = 1 to block_number // block_number is ceil(high_value - lower_value / Cache_size )
+      for p in set of all_prime{
+         FindPrime(i, p, all_number); 
+      }
 ```
          
