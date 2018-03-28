@@ -26,14 +26,18 @@ int main(int argc, char *argv[])
   int i, j, k, flag;
   int rem; /* length between low_value and first */
   int id; /* process ID number */
+
   // int index; /* index of current prime */
+
   int low_value; /* lowest value on this proc */
   char *marked; /* portion of 2,...,n */
   int *prime_list; /* store all primes */
   int n0, n; /* sieving from 3,...,n0 (n is largest odd number) */
   int m; /* number of odd numbers */
   int p; /* number of processes */
+
   // int proc0_size; /* size of proc 0's subarray */
+
   int prime; /* current prime */
   int size; /* elements in 'marked' */
   int cache_size; /* one block's size */
@@ -81,6 +85,7 @@ int main(int argc, char *argv[])
   }
 
   for (i=0; i<size; i++)  marked[i] = 0;
+
   // if (!id)  index = 0; // root process
 
   /* calculate prime list */
@@ -108,6 +113,7 @@ int main(int argc, char *argv[])
   /* mark composite numbers as 1 */
   while (cache_low <= high_value) {
   // block loop
+
     // printf("cache: %d - %d\n", cache_low, cache_high);
     for (i=0; i<prime_number; i++) {
     // prime loop
@@ -136,6 +142,7 @@ int main(int argc, char *argv[])
     // update block
     cache_low = cache_high + 2;
     cache_high = cache_low + 2 * cache_size;
+
 
     // printf("\n");
   }
