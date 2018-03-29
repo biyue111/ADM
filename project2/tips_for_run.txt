@@ -1,0 +1,12 @@
+# TIPS FOR RUN
+
+
+You can run file run.sh with command：
+
+./run.sh $1 $2 $3
+
+where $1 is process number, $2 is the total integers for checking and $3 is cache size.
+
+
+For example:
+./run.sh 10 100000000 40000
