@@ -12,6 +12,7 @@
 #define CACHE_HIGH(k, c) (CACHE_LOW((k)+1, c)-2)
 
 /* Command line example
+source ~/.bashrc
 Compile: mpicc -o findprime findprime.c
 Execute: mpirun -n 5 ./findprime 1000 4
 */
@@ -26,18 +27,14 @@ int main(int argc, char *argv[])
   int i, j, k, flag;
   int rem; /* length between low_value and first */
   int id; /* process ID number */
-
   // int index; /* index of current prime */
-
   int low_value; /* lowest value on this proc */
   char *marked; /* portion of 2,...,n */
   int *prime_list; /* store all primes */
   int n0, n; /* sieving from 3,...,n0 (n is largest odd number) */
   int m; /* number of odd numbers */
   int p; /* number of processes */
-
   // int proc0_size; /* size of proc 0's subarray */
-
   int prime; /* current prime */
   int size; /* elements in 'marked' */
   int cache_size; /* one block's size */
@@ -73,8 +70,6 @@ int main(int argc, char *argv[])
   low_value = 3 + BLOCK_LOW(id, p, m) * 2;
   high_value = 3 + BLOCK_HIGH(id, p, m) * 2;
   size = BLOCK_SIZE(id, p, m);
-  printf("\n\nProcess %d checks odd numbers from %d to %d\n", id, low_value, high_value);
-  printf("Primes found from process %d are", id);
 
   /* Allocate this process's share of the array */
   marked = (char *) malloc (size);
@@ -85,7 +80,6 @@ int main(int argc, char *argv[])
   }
 
   for (i=0; i<size; i++)  marked[i] = 0;
-
   // if (!id)  index = 0; // root process
 
   /* calculate prime list */
@@ -113,12 +107,9 @@ int main(int argc, char *argv[])
   /* mark composite numbers as 1 */
   while (cache_low <= high_value) {
   // block loop
-
-    // printf("cache: %d - %d\n", cache_low, cache_high);
     for (i=0; i<prime_number; i++) {
     // prime loop
       prime = prime_list[i];
-      // printf("prime: %d; ", prime);
       if (prime * prime > cache_low) {
         first = (prime * prime - low_value) / 2;
       }
@@ -131,34 +122,26 @@ int main(int argc, char *argv[])
       }
 
       while (low_value + 2 * first <= MIN(cache_high, high_value) && low_value + 2 * first >= MAX(cache_low, low_value)) {
-        // printf("composite: %d; ", low_value + 2 * first);
         marked[first] = 1;
         first += prime;
-        // printf("next: %d", low_value + 2 * first);
       }
-      // printf("\n");
     }
 
     // update block
     cache_low = cache_high + 2;
     cache_high = cache_low + 2 * cache_size;
 
-
-    // printf("\n");
   }
 
   count = 0;
   if (!id) {
     count = 1; // add 2 in the final prime list
-    // printf(" 2 ");
   }
   for (i=0; i<size; i++) {
     if (!marked[i]) {
       count++;
-      printf(" %d ", low_value+i*2);
     }
   }
-  printf("\n\n");
   MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM,
            0, MPI_COMM_WORLD);
 
