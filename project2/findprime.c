@@ -117,11 +117,13 @@ int main(int argc, char *argv[])
         if (!(cache_low % prime))  first = (cache_low - low_value) / 2;
         else {
           rem = prime - (cache_low % prime);
-          first = ((rem % 2) * prime + rem) / 2 + (cache_low - low_value) / 2; // if first is even, rem % 2 = 1
+          // if first is even, rem % 2 = 1
+          first = ((rem % 2) * prime + rem) / 2 + (cache_low - low_value) / 2;
         }
       }
 
-      while (low_value + 2 * first <= MIN(cache_high, high_value) && low_value + 2 * first >= MAX(cache_low, low_value)) {
+      while (low_value + 2 * first <= MIN(cache_high, high_value) && low_value
+       + 2 * first >= MAX(cache_low, low_value)) {
         marked[first] = 1;
         first += prime;
       }
