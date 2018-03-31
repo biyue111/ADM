@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     size[0] = size[1] = (int)sqrt((double)p);
     periodic[0] = periodic[1] = 0;
     MPI_Dims_create(p, 2, size);
-    MPI_Cart_create(MPI_COMM_WORLD, 2, size, periodic, 1, &cart_comm);
+    MPI_Cart_create(MPI_COMM_WORLD, 2, size, periodic, 0, &cart_comm); // Use the old ID
     MPI_Cart_coords(cart_comm, id, 2, grid_coords);
     /* find the root ID */
     int root_coord[2] ;
@@ -68,8 +68,6 @@ int main(int argc, char *argv[])
 
         fscanf(file, "%d", &dimA[0]);
         fscanf(file, "%d", &dimA[1]);
-        MPI_Bcast(&dimA[0], 1, MPI_INT, root, cart_comm);
-        MPI_Bcast(&dimA[1], 1, MPI_INT, root, cart_comm);
 
         int i,j;
         malloc2ddouble(&A, dimA[0], dimA[1]);
@@ -79,38 +77,62 @@ int main(int argc, char *argv[])
             {
                 fscanf(file, "%lf", &A[i][j]);
             }
-#ifdef DEBUG
-        printf("The matrix A is:\n");
-        for (i=0; i<dimA[0]; i++)
-        {
-            for(j=0; j<dimA[1]; j++)
-                printf("%f", A[i][j]);
-            printf("\n");
-        }
-#endif
+        fclose(file);
     }
+    MPI_Bcast(&dimA[0], 1, MPI_INT, root, cart_comm);
+    MPI_Bcast(&dimA[1], 1, MPI_INT, root, cart_comm);
     /* Create subMatrix */
-    MPI_Datatype subAtype;
+    MPI_Datatype subAtype, r_subAtype;
     dimsubA[0] = SUBMATRIX_HEIGHT(dimA[0], size[0]);
     dimsubA[1] = SUBMATRIX_WIDTH(dimA[1], size[1]);
-    malloc2ddouble(&subA, dimsubA[0], dimsubB[1]); 
+
+    //printf("dimA: %d %d\n", dimA[0], dimA[1]);
+
+    malloc2ddouble(&subA, dimsubA[0], dimsubA[1]); 
     int starts[2] = {0,0};
-    MPI_Type_create_subarray(2, dimA, dimsubA, starts, MPI_ORDER_C, MPI_INT, &subAtype);
-    MPI_Type_commit(&subAtype);
+    MPI_Type_create_subarray(2, dimA, dimsubA, starts, MPI_ORDER_C, MPI_DOUBLE, &subAtype);
+    MPI_Type_create_resized(subAtype, 0, dimsubA[1]*sizeof(double), &r_subAtype);
+    MPI_Type_commit(&r_subAtype);
 
     double *Aptr = NULL;
-    if (id == 0) Aptr = &(A[0][0]);
-
-    MPI_Scatter(Aptr, 1, subAtype, &(subA[0][0]), dimsubA[0]*dimsubA[1], MPI_INT, root, cart_comm);
+    if (id == root) Aptr = &(A[0][0]);
 
 #ifdef DEBUG
-    /* Each process print received submatrix of A */
-    int k = 0;
-    for (k=0; k<p; k++)
+    if (id == root)
     {
-        if (k = id)
+        printf("The matrix A is:\n");
+        for (int i=0; i<dimA[0]; i++)
         {
-            printf("The submatrix in process %d is:", k);
+            for(int j=0; j<dimA[1]; j++)
+                printf("%f ", A[i][j]);
+            printf("\n");
+        }
+    }
+#endif
+    int counts[p];
+    int displs[p];
+    int k = 0;
+    for (int i=0; i<size[0]; i++)
+    {
+       for (int j=0; j<size[1];j++)
+       {
+           counts[k] = 1;
+           displs[k] = i*size[1]*dimsubA[0] + j;
+           k++;
+       }
+    }
+    
+    int err_msg = MPI_Scatterv(Aptr, counts, displs, r_subAtype, &(subA[0][0]), dimsubA[0]*dimsubA[1], MPI_DOUBLE, root, cart_comm);
+
+#ifdef DEBUG
+    printf(" %d\n", dimsubA[0]*dimsubA[1]);
+    /* Each process print received submatrix of A */
+    MPI_Barrier(cart_comm);
+    for (int k=0; k<p; k++)
+    {
+        if (k == id)
+        {
+            printf("The submatrix in process (%d %d)is:\n", grid_coords[0], grid_coords[1]);
             for (int i=0; i<dimsubA[0]; i++)
             {
                 for (int j=0; j<dimsubA[1]; j++)
@@ -122,4 +144,6 @@ int main(int argc, char *argv[])
 
     }
 #endif
+    MPI_Finalize();
+    return 0;
 }
