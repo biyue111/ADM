@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <malloc.h>
+#include <math.h>
 #include <mpi.h>
 //#include "MyMPI."
 
@@ -8,10 +10,10 @@
 
 int malloc2ddouble(double ***array, int n, int m)
 {
-    double *p = (char *)malloc(n*m*sizeof(double);
+    double *p = (double *)malloc(n*m*sizeof(double));
     if (!p) return -1;
 
-    (*array) = (char **)malloc(n*sizeof(double*));
+    (*array) = (double **)malloc(n*sizeof(double*));
     if (!(*array)) 
     {
         free(p);
@@ -48,7 +50,7 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
     /* Create cartesien topology communicator */
-    size[0] = size[1] = sqrt(p);
+    size[0] = size[1] = (int)sqrt((double)p);
     periodic[0] = periodic[1] = 0;
     MPI_Dims_create(p, 2, size);
     MPI_Cart_create(MPI_COMM_WORLD, 2, size, periodic, 1, &cart_comm);
@@ -56,7 +58,7 @@ int main(int argc, char *argv[])
     /* find the root ID */
     int root_coord[2] ;
     root_coord[0] = root_coord[1] = 0;
-    root = MPI_Cart_rank(cart_comm, root_coord, &root)
+    root = MPI_Cart_rank(cart_comm, root_coord, &root);
     
     /* The first process read the input file*/
     if(id == root)
@@ -72,17 +74,17 @@ int main(int argc, char *argv[])
         int i,j;
         malloc2ddouble(&A, dimA[0], dimA[1]);
 
-        for (i=0; i<sizeA[0]; i++)
-            for (j=0; j<sizeA[1]; j++)
+        for (i=0; i<dimA[0]; i++)
+            for (j=0; j<dimA[1]; j++)
             {
-                fscanf(file, "%f", &A[i][j]);
+                fscanf(file, "%lf", &A[i][j]);
             }
 #ifdef DEBUG
         printf("The matrix A is:\n");
         for (i=0; i<dimA[0]; i++)
         {
             for(j=0; j<dimA[1]; j++)
-                printf("%d", A[i,j]);
+                printf("%f", A[i][j]);
             printf("\n");
         }
 #endif
@@ -91,13 +93,13 @@ int main(int argc, char *argv[])
     MPI_Datatype subAtype;
     dimsubA[0] = SUBMATRIX_HEIGHT(dimA[0], size[0]);
     dimsubA[1] = SUBMATRIX_WIDTH(dimA[1], size[1]);
-    malloc2ddouble(subA, dimsubA[0], dimsubB[1]); 
+    malloc2ddouble(&subA, dimsubA[0], dimsubB[1]); 
     int starts[2] = {0,0};
     MPI_Type_create_subarray(2, dimA, dimsubA, starts, MPI_ORDER_C, MPI_INT, &subAtype);
     MPI_Type_commit(&subAtype);
 
     double *Aptr = NULL;
-    if (id == 0) Aptr = &(&A[0][0]);
+    if (id == 0) Aptr = &(A[0][0]);
 
     MPI_Scatter(Aptr, 1, subAtype, &(subA[0][0]), dimsubA[0]*dimsubA[1], MPI_INT, root, cart_comm);
 
@@ -109,10 +111,10 @@ int main(int argc, char *argv[])
         if (k = id)
         {
             printf("The submatrix in process %d is:", k);
-            for (i=0; i<dimsubA[0]; i++)
+            for (int i=0; i<dimsubA[0]; i++)
             {
-                for (j=0; j<dimsubA[1]; j++)
-                    printf("%d ", subA[i][j]);
+                for (int j=0; j<dimsubA[1]; j++)
+                    printf("%f ", subA[i][j]);
                 printf("\n");
             }
         }
