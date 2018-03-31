@@ -5,8 +5,8 @@
 //#include "MyMPI."
 
 #define DEBUG 1
-#define SUBMATRIX_HEIGHT(m, p) (m + m%p)/p
-#define SUBMATRIX_WIDTH(n, p) (n + n%p)/p
+#define SUBMATRIX_HEIGHT(m, p) (m + m%p)/p // row number of the submatrix
+#define SUBMATRIX_WIDTH(n, p) (n + n%p)/p // column number of the submatrix
 
 int malloc2ddouble(double ***array, int n, int m)
 {
@@ -36,13 +36,13 @@ int main(int argc, char *argv[])
     int periodic[2];
     int size[2]; // number of rows of blocks (==sqrt(p))
     
-    double **A;
+    double **A; // Matrix A
     int dimA[2]; //dimension of matrix A
-    double **B;
+    double **B; // Matrix B
     int dimB[2]; //dimension of matrix B
     double **subA; //submatrix of A
     int dimsubA[2];
-    double **subB;
+    double **subB; //submatrix of B
     int dimsubB[2];
 
     MPI_Init(&argc, &argv);
@@ -54,18 +54,18 @@ int main(int argc, char *argv[])
     periodic[0] = periodic[1] = 0;
     MPI_Dims_create(p, 2, size);
     MPI_Cart_create(MPI_COMM_WORLD, 2, size, periodic, 0, &cart_comm); // Use the old ID
-    MPI_Cart_coords(cart_comm, id, 2, grid_coords);
+    MPI_Cart_coords(cart_comm, id, 2, grid_coords); // get the coordinates of the process
     /* find the root ID */
     int root_coord[2] ;
     root_coord[0] = root_coord[1] = 0;
     root = MPI_Cart_rank(cart_comm, root_coord, &root);
     
-    /* The first process read the input file*/
+    /* The root process read the input file*/
     if(id == root)
     {
     
         FILE* file = fopen ("input.txt", "r");
-
+        //read the dimension of matrixes
         fscanf(file, "%d", &dimA[0]);
         fscanf(file, "%d", &dimA[1]);
 
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
             }
         fclose(file);
     }
-    MPI_Bcast(&dimA[0], 1, MPI_INT, root, cart_comm);
+    MPI_Bcast(&dimA[0], 1, MPI_INT, root, cart_comm); //Broadcast the dimensiuon of A
     MPI_Bcast(&dimA[1], 1, MPI_INT, root, cart_comm);
     /* Create subMatrix */
     MPI_Datatype subAtype, r_subAtype;
@@ -88,9 +88,10 @@ int main(int argc, char *argv[])
 
     //printf("dimA: %d %d\n", dimA[0], dimA[1]);
 
+    /* Send submatrix to each process */
     malloc2ddouble(&subA, dimsubA[0], dimsubA[1]); 
     int starts[2] = {0,0};
-    MPI_Type_create_subarray(2, dimA, dimsubA, starts, MPI_ORDER_C, MPI_DOUBLE, &subAtype);
+    MPI_Type_create_subarray(2, dimA, dimsubA, starts, MPI_ORDER_C, MPI_DOUBLE, &subAtype); // Create the subarray type
     MPI_Type_create_resized(subAtype, 0, dimsubA[1]*sizeof(double), &r_subAtype);
     MPI_Type_commit(&r_subAtype);
 
