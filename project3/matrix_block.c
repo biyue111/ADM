@@ -64,14 +64,14 @@ int matrix_multip(double **A, double **B, double **C, int m, int n)
     return 0;
 }
 
-int print_matrix(double **matrix, int *dim, int id, int *grid_cords, char *matrix_name, MPI_Comm WORLD_COMM)
+int print_matrix(int process_num, double **matrix, int *dim, int id, int *grid_coords, char *msg, MPI_Comm WORLD_COMM)
 {
     MPI_Barrier(WORLD_COMM);
-    for (int k=0; k<p; k++)
+    for (int k=0; k<process_num; k++)
     {
         if (k == id)
         {
-            printf("The %s in process (%d %d)is:\n", matrix_name, grid_coords[0], grid_coords[1]);
+            printf("%s in process (%d %d) is:\n", msg, grid_coords[0], grid_coords[1]);
             for (int i=0; i<dim[0]; i++)
             {
                 for (int j=0; j<dim[1]; j++)
@@ -87,6 +87,7 @@ int print_matrix(double **matrix, int *dim, int id, int *grid_cords, char *matri
 int main(int argc, char *argv[])
 {
     MPI_Comm cart_comm; //Cartesian topology communicator
+    double elapsed_time; //parallel execution time 
     int p; // number of processes
     int id; // process ID number 
     int root; // the root process ID
@@ -290,24 +291,25 @@ int main(int argc, char *argv[])
         MPI_Barrier(cart_comm);
     }
 */
-    print_matrix(subA, dimsubA, id, grid_cords, "submatrix A", cart_comm);
+    print_matrix(p, subA, dimsubA, id, grid_coords, "The submatrix A", cart_comm);
 
     /* Each process print received submatrix of B */
-    MPI_Barrier(cart_comm);
-    for (int k=0; k<p; k++)
-    {
-        if (k == id)
-        {
-            printf("The submatrix B in process (%d %d)is:\n", grid_coords[0], grid_coords[1]);
-            for (int i=0; i<dimsubB[0]; i++)
-            {
-                for (int j=0; j<dimsubB[1]; j++)
-                    printf("%f ", subB[i][j]);
-                printf("\n");
-            }
-        }
-        MPI_Barrier(cart_comm);
-    }
+    //MPI_Barrier(cart_comm);
+    //for (int k=0; k<p; k++)
+    //{
+    //    if (k == id)
+    //    {
+    //        printf("The submatrix B in process (%d %d)is:\n", grid_coords[0], grid_coords[1]);
+    //        for (int i=0; i<dimsubB[0]; i++)
+    //        {
+    //            for (int j=0; j<dimsubB[1]; j++)
+    //                printf("%f ", subB[i][j]);
+    //            printf("\n");
+    //        }
+    //    }
+    //    MPI_Barrier(cart_comm);
+    //}
+    print_matrix(p, subB, dimsubB, id, grid_coords, "The submatrix B", cart_comm);
 #endif
     
     /* Rearrange Blocks */
@@ -375,38 +377,40 @@ int main(int argc, char *argv[])
 
 #ifdef DEBUG
     /* Each process print received submatrix of A */
-    MPI_Barrier(cart_comm);
-    for (int k=0; k<p; k++)
-    {
-        if (k == id)
-        {
-            printf("Rearranged: The submatrix A in process (%d %d)is:\n", grid_coords[0], grid_coords[1]);
-            for (int i=0; i<dimsubA[0]; i++)
-            {
-                for (int j=0; j<dimsubA[1]; j++)
-                    printf("%f ", subA[i][j]);
-                printf("\n");
-            }
-        }
-        MPI_Barrier(cart_comm);
-    }
+    //MPI_Barrier(cart_comm);
+    //for (int k=0; k<p; k++)
+    //{
+    //    if (k == id)
+    //    {
+    //        printf("Rearranged: The submatrix A in process (%d %d)is:\n", grid_coords[0], grid_coords[1]);
+    //        for (int i=0; i<dimsubA[0]; i++)
+    //        {
+    //            for (int j=0; j<dimsubA[1]; j++)
+    //                printf("%f ", subA[i][j]);
+    //            printf("\n");
+    //        }
+    //    }
+    //    MPI_Barrier(cart_comm);
+    //}
+    print_matrix(p, subA, dimsubA, id, grid_coords, "Rearranged: The submatrix A", cart_comm);
 
-    /* Each process print received submatrix of B */
-    MPI_Barrier(cart_comm);
-    for (int k=0; k<p; k++)
-    {
-        if (k == id)
-        {
-            printf("Rearranged: The submatrix B in process (%d %d)is:\n", grid_coords[0], grid_coords[1]);
-            for (int i=0; i<dimsubB[0]; i++)
-            {
-                for (int j=0; j<dimsubB[1]; j++)
-                    printf("%f ", subB[i][j]);
-                printf("\n");
-            }
-        }
-        MPI_Barrier(cart_comm);
-    }
+    ///* Each process print received submatrix of B */
+    //MPI_Barrier(cart_comm);
+    //for (int k=0; k<p; k++)
+    //{
+    //    if (k == id)
+    //    {
+    //        printf("Rearranged: The submatrix B in process (%d %d)is:\n", grid_coords[0], grid_coords[1]);
+    //        for (int i=0; i<dimsubB[0]; i++)
+    //        {
+    //            for (int j=0; j<dimsubB[1]; j++)
+    //                printf("%f ", subB[i][j]);
+    //            printf("\n");
+    //        }
+    //    }
+    //    MPI_Barrier(cart_comm);
+    //}
+    print_matrix(p, subB, dimsubB, id, grid_coords, "Rearranged: The submatrix B", cart_comm);
 #endif
 
     matrix_multip(subA, subB, subC, dimsubA[0], dimsubA[1]);
@@ -432,57 +436,64 @@ int main(int argc, char *argv[])
 
  #ifdef DEBUG
     /* Each process print received submatrix of A */
-        MPI_Barrier(cart_comm);
-        for (int k=0; k<p; k++)
-        {
-            if (k == id)
-            {
-                printf("Loop %d:The submatrix A in process (%d %d)is:\n",i, grid_coords[0], grid_coords[1]);
-                for (int i=0; i<dimsubA[0]; i++)
-                {
-                    for (int j=0; j<dimsubA[1]; j++)
-                        printf("%f ", subA[i][j]);
-                    printf("\n");
-                }
-            }
-            MPI_Barrier(cart_comm);
-        }
+    char msg[100];    
+    sprintf(msg,"Loop %d: The submatrix A", i);
+    print_matrix(p, subA, dimsubA, id, grid_coords, msg, cart_comm);
+        //MPI_Barrier(cart_comm);
+        //for (int k=0; k<p; k++)
+        //{
+        //    if (k == id)
+        //    {
+        //        printf("Loop %d:The submatrix A in process (%d %d)is:\n",i, grid_coords[0], grid_coords[1]);
+        //        for (int i=0; i<dimsubA[0]; i++)
+        //        {
+        //            for (int j=0; j<dimsubA[1]; j++)
+        //                printf("%f ", subA[i][j]);
+        //            printf("\n");
+        //        }
+        //    }
+        //    MPI_Barrier(cart_comm);
+        //}
 
         /* Each process print received submatrix of B */
-        MPI_Barrier(cart_comm);
-        for (int k=0; k<p; k++)
-        {
-            if (k == id)
-            {
-                printf("The submatrix B in process (%d %d)is:\n", grid_coords[0], grid_coords[1]);
-                for (int i=0; i<dimsubB[0]; i++)
-                {
-                    for (int j=0; j<dimsubB[1]; j++)
-                        printf("%f ", subB[i][j]);
-                    printf("\n");
-                }
-            }
-            MPI_Barrier(cart_comm);
-        }
+        sprintf(msg,"Loop %d: The submatrixB", i);
+        print_matrix(p, subB, dimsubB, id, grid_coords, msg, cart_comm);
+        //MPI_Barrier(cart_comm);
+        //for (int k=0; k<p; k++)
+        //{
+        //    if (k == id)
+        //    {
+        //        printf("The submatrix B in process (%d %d)is:\n", grid_coords[0], grid_coords[1]);
+        //        for (int i=0; i<dimsubB[0]; i++)
+        //        {
+        //            for (int j=0; j<dimsubB[1]; j++)
+        //                printf("%f ", subB[i][j]);
+        //            printf("\n");
+        //        }
+        //    }
+        //    MPI_Barrier(cart_comm);
+        //}
 
 #endif
 #ifdef DEBUG
         /* Print each sub matrix of C */
-        MPI_Barrier(cart_comm);
-        for (int k=0; k<p; k++)
-        {
-            if (k == id)
-            {
-                printf("Loop %d:The submatrix C in process (%d %d)is:\n", i, grid_coords[0], grid_coords[1]);
-                for (int i=0; i<dimsubC[0]; i++)
-                {
-                    for (int j=0; j<dimsubC[1]; j++)
-                        printf("%f ", subC[i][j]);
-                    printf("\n");
-                }
-            }
-            MPI_Barrier(cart_comm);
-        }
+        sprintf(msg,"Loop %d: The submatrixC", i);
+        print_matrix(p, subC, dimsubC, id, grid_coords, msg, cart_comm);
+        //MPI_Barrier(cart_comm);
+        //for (int k=0; k<p; k++)
+        //{
+        //    if (k == id)
+        //    {
+        //        printf("Loop %d:The submatrix C in process (%d %d)is:\n", i, grid_coords[0], grid_coords[1]);
+        //        for (int i=0; i<dimsubC[0]; i++)
+        //        {
+        //            for (int j=0; j<dimsubC[1]; j++)
+        //                printf("%f ", subC[i][j]);
+        //            printf("\n");
+        //        }
+        //    }
+        //    MPI_Barrier(cart_comm);
+        //}
 #endif
     }
 
@@ -512,8 +523,8 @@ int main(int argc, char *argv[])
                 printf("%.1lf ", C[i][j]);
             printf("\n");
         }
+        printf("Total elapsed time: %10.6f\n", elapsed_time);
     }
-    printf("Total elapsed time: %10.6f\n", elapsed_time);
 
     MPI_Finalize();
     return 0;
