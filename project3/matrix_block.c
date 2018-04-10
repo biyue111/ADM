@@ -115,8 +115,6 @@ int main(int argc, char *argv[])
 
     MPI_Init(&argc, &argv);
     /* start the timer */
-    MPI_Barrier(MPI_COMM_WORLD); // block until all processes in the communicator have achieved this routine
-    elapsed_time = - MPI_Wtime();
     
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
@@ -193,6 +191,10 @@ int main(int argc, char *argv[])
         }
     }
 #endif
+    /* Launch the timer */
+    MPI_Barrier(MPI_COMM_WORLD); // block until all processes in the communicator have achieved this routine
+    elapsed_time = - MPI_Wtime();
+    
     /* Broadcast the dimA and create matrix C */
     MPI_Bcast(&dimA[0], 1, MPI_INT, root, cart_comm);
     MPI_Bcast(&dimA[1], 1, MPI_INT, root, cart_comm);
