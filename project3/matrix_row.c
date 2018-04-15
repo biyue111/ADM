@@ -143,21 +143,21 @@ int main(int argc, char *argv[])
         fclose(file2);
 
         printf("Matrix A with row: %d, col: %d\n", dimA[0], dimA[1]);
-        for(int i = 0; i < dimA[0]; i++){
-            for(int j = 0; j < dimA[1]; j++){
-                printf("%f ", A[i][j]);
-            }
-            printf("\n");
-        }
+        //for(int i = 0; i < dimA[0]; i++){
+        //    for(int j = 0; j < dimA[1]; j++){
+        //        printf("%f ", A[i][j]);
+        //    }
+        //    printf("\n");
+        //}
         printf("\n");
 
         printf("Matrix B with row: %d, col: %d\n", dimB[0], dimB[1]);
-        for(int i = 0; i < dimB[0]; i++){
-            for(int j = 0; j < dimB[1]; j++){
-                printf("%f ", B[i][j]);
-            }
-            printf("\n");
-        }
+        //for(int i = 0; i < dimB[0]; i++){
+        //    for(int j = 0; j < dimB[1]; j++){
+        //        printf("%f ", B[i][j]);
+        //    }
+        //    printf("\n");
+        //}
         printf("\n");
 
 #ifdef DEBUG
@@ -391,6 +391,9 @@ int main(int argc, char *argv[])
             }
         }
 
+        printf("Success to multiply matrix A and matrix B\n");
+
+        /*
         printf("Result for A * B :\n");
         for(int i = 0; i < dimC[0]; i++){
             for(int j = 0; j < dimC[1]; j++){
@@ -398,6 +401,7 @@ int main(int argc, char *argv[])
             }
             printf("\n");
         }
+        */
         
     }
 
