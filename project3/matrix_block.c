@@ -5,8 +5,9 @@
 #include <mpi.h>
 //#include "MyMPI."
 
-#define DEBUG 1
-#define INPUT_FILE "input.txt"
+//#define DEBUG 1
+//#define DEBUG1 1
+#define INPUT_FILE "inputa.txt"
 #define SUBMATRIX_HEIGHT(m, p) (m + m%p)/p
 #define SUBMATRIX_WIDTH(n, p) (n + n%p)/p
 
@@ -134,6 +135,7 @@ int main(int argc, char *argv[])
     /* The first process read the input file*/
     if(id == root)
     {
+    	printf("\n-----Multiply two matrices with Canon's Algorithm in parallel-----\n\n");
     
         FILE* file = fopen (INPUT_FILE, "r");
 
@@ -143,10 +145,10 @@ int main(int argc, char *argv[])
         dimB[0] = dimA[1];
         dimB[1] = dimA[0];
 
-#ifdef DEBUG
-    printf("dimA: %d %d\n", dimA[0], dimA[1]);
-    printf("dimB: %d %d\n", dimB[0], dimB[1]);
-#endif
+//#ifdef DEBUG
+    printf("Dimension of A: %d %d\n", dimA[0], dimA[1]);
+    printf("Dimension of B: %d %d\n", dimB[0], dimB[1]);
+//#endif
 
         int i,j;
         // Assign memory for A and zero-filling
@@ -167,6 +169,9 @@ int main(int argc, char *argv[])
             }  
         fclose(file);
     }
+#ifdef DEBUG1
+    printf("id %d Finish reading\n",id);
+#endif
     
 #ifdef DEBUG
     /* Pring matrix A and matrix B*/
@@ -193,8 +198,11 @@ int main(int argc, char *argv[])
     }
 #endif
     /* Launch the timer */
-    MPI_Barrier(MPI_COMM_WORLD); // block until all processes in the communicator have achieved this routine
-    elapsed_time = - MPI_Wtime();
+    MPI_Barrier(cart_comm); // block until all processes in the communicator have achieved this routine
+    if (id == root) elapsed_time = - MPI_Wtime();
+#ifdef DEBUG1
+    printf("id %d Before broadcast\n",id);
+#endif
     
     /* Broadcast the dimA and create matrix C */
     MPI_Bcast(&dimA[0], 1, MPI_INT, root, cart_comm);
@@ -206,16 +214,25 @@ int main(int argc, char *argv[])
     r_dimB[0] = dimB[0] + dimB[0]%size[0];
     r_dimB[1] = dimB[1] + dimB[1]%size[1];
 
+#ifdef DEBUG1
+    printf("id %d Finishing broadcast\n",id);
+#endif
+
     dimC[0] = dimA[0];
     dimC[1] = dimB[1];
     r_dimC[0] = r_dimA[0];
     r_dimC[1] = r_dimB[1];
     malloc2ddouble(&C, r_dimC[0], r_dimC[1]);
     clear_matrix(C, r_dimC);
+
+#ifdef DEBUG1
+    printf("id %d creating C\n",id);
+#endif
     /* Only one process */
     if (p == 1)
     {
         matrix_multip(A, B, C, dimA[0], dimA[1]);
+        /*
         printf("The result: \n");
         for(int i=0; i<dimC[0]; i++)
         {
@@ -223,6 +240,7 @@ int main(int argc, char *argv[])
                 printf("%.1lf ", C[i][j]);
             printf("\n");
         }
+        */
         return 0;
     }
 
@@ -245,6 +263,10 @@ int main(int argc, char *argv[])
     printf("Dimension of subB in process %d: %d %d\n", id, dimsubB[0], dimsubB[1]);
 #endif
 
+#ifdef DEBUG1
+    printf("id %d before creating subA B\n",id);
+#endif
+
     malloc2ddouble(&subA, dimsubA[0], dimsubA[1]); 
     malloc2ddouble(&subA_buf, dimsubA[0], dimsubA[1]);
     int starts[2] = {0,0};
@@ -260,10 +282,19 @@ int main(int argc, char *argv[])
 
     malloc2ddouble(&subC, dimsubC[0], dimsubC[1]);
 
+#ifdef DEBUG1
+    printf("id %d finish creating subA B\n",id);
+#endif
+
     double *Aptr = NULL;
     double *Bptr = NULL;
     if (id == root) Aptr = &(A[0][0]);
     if (id == root) Bptr = &(B[0][0]);
+
+    MPI_Barrier(cart_comm);
+#ifdef DEBUG1
+    printf("id %d before scatter\n",id);
+#endif
 
     int counts[p];
     int displs[p];
@@ -272,6 +303,10 @@ int main(int argc, char *argv[])
 
     find_counts_displs(counts, displs, size, dimsubB);
     MPI_Scatterv(Bptr, counts, displs, r_subBtype, &(subB[0][0]), dimsubB[0]*dimsubB[1], MPI_DOUBLE, root, cart_comm);
+
+#ifdef DEBUG1
+    printf("id %d after scatter\n",id);
+#endif
 
 #ifdef DEBUG
     /* Each process print received submatrix of A */
@@ -351,6 +386,10 @@ int main(int argc, char *argv[])
     print_matrix(p, subB, dimsubB, id, grid_coords, "Rearranged: The submatrix B", cart_comm);
 #endif
 
+#ifdef DEBUG1
+    printf("id %d waiting 1st multiplication...\n",id);
+#endif
+
     matrix_multip(subA, subB, subC, dimsubA[0], dimsubA[1]);
 
     destA_coords[0] = grid_coords[0];
@@ -366,8 +405,14 @@ int main(int argc, char *argv[])
     receB_coords[0] = (grid_coords[0] + 1 + size[0])%size[0];
     receB_coords[1] = grid_coords[1];
     MPI_Cart_rank(cart_comm, receB_coords, &receB_rank);
+
+
     for (int i=0; i<size[0] - 1; i++)
     {
+#ifdef DEBUG1
+    printf("id %d before %d replace...\n",id, i);
+#endif
+    	MPI_Barrier(cart_comm);
         MPI_Sendrecv_replace(&(subA[0][0]), dimsubA[0]*dimsubA[1], MPI_DOUBLE, destA_rank, 0, receA_rank, 0, cart_comm, &status);
         MPI_Sendrecv_replace(&(subB[0][0]), dimsubB[0]*dimsubB[1], MPI_DOUBLE, destB_rank, 0, receB_rank, 0, cart_comm, &status);
         matrix_multip(subA, subB, subC, dimsubA[0], dimsubA[1]);
@@ -399,21 +444,30 @@ int main(int argc, char *argv[])
     MPI_Type_commit(&r_subCtype);
     find_counts_displs(counts, displs, size, dimsubC);
 
+#ifdef DEBUG1
+    printf("id %d waiting gather...\n",id);
+#endif
+
+    MPI_Barrier(cart_comm);
     MPI_Gatherv(&(subC[0][0]), dimsubC[0]*dimsubC[1], MPI_DOUBLE, &(C[0][0]), counts, displs, r_subCtype, root, cart_comm);
-    
+
+#ifdef DEBUG1
+    printf("id %d finish gather...\n",id);
+#endif   
     /* stop timer */
-    elapsed_time += MPI_Wtime();
+    if (id == root) elapsed_time += MPI_Wtime();
     
     /* print result */
     if (id == root)
     {
-        printf("The result: \n");
-        for(int i=0; i<dimC[0]; i++)
+        printf("Success to multiply matrix A and matrix B\n");
+        /*for(int i=0; i<dimC[0]; i++)
         {
             for(int j=0; j<dimC[1]; j++)
                 printf("%.1lf ", C[i][j]);
             printf("\n");
         }
+        */
         printf("Total elapsed time: %10.6f\n", elapsed_time);
     }
 
